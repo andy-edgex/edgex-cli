@@ -12,7 +12,7 @@ const program = new Command();
 
 program
   .name('edgex')
-  .description('CLI for EdgeX perpetual and equity contract trading')
+  .description('CLI for EdgeX perpetual contract trading')
   .version('0.1.0')
   .option('--json', 'Output in JSON format')
   .option('--testnet', 'Use testnet environment');

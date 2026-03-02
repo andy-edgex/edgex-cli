@@ -1,7 +1,7 @@
 {
   "name": "@realnaka/edgex-cli",
   "version": "0.1.0",
-  "description": "CLI for EdgeX perpetual and equity contract trading",
+  "description": "CLI for EdgeX perpetual contract trading",
   "type": "module",
   "bin": {
     "edgex": "./dist/index.js"

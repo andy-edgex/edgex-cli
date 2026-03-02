@@ -1,13 +1,13 @@
 # edgex-cli
 
-Command-line interface for [EdgeX](https://pro.edgex.exchange) perpetual and equity contract trading.
+Command-line interface for [EdgeX](https://pro.edgex.exchange) perpetual contract trading.
 
 Built for traders and AI agents. All commands support `--json` output for programmatic consumption.
 
 ## Features
 
 - **Market data** — ticker, depth, kline, funding, long/short ratio
-- **Account management** — balances, positions, orders, leverage
+- **Account** — balances, positions, orders, leverage
 - **Trading** — limit/market orders with TP/SL, cancel, batch cancel
 - **WebSocket streaming** — real-time ticker, depth, kline, trades, account updates (NDJSON)
 - **Testnet support** — `--testnet` flag for safe testing
@@ -25,8 +25,8 @@ Or from source:
 git clone https://github.com/realnaka/edgex-cli.git
 cd edgex-cli
 npm install
-npm run build
-npm link
+npm run build    # required — compiles TypeScript to dist/
+npm link         # makes "edgex" command available globally
 ```
 
 Requires Node.js >= 18.
