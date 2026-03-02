@@ -128,9 +128,77 @@ edgex stream account                   # Account/order updates (requires auth)
 
 Copy any prompt below and paste it to your AI assistant (Cursor, Claude, ChatGPT, etc.). The AI will use the CLI to complete the task.
 
-### Market Snapshot
+### Beginner — Single-step prompts
 
-> Get a comprehensive market overview of the top assets.
+Simple one-liners to get started.
+
+```text
+BTC 现在多少钱？
+```
+
+```text
+查一下 ETH 和 SOL 的价格。
+```
+
+```text
+查看我的账户余额。
+```
+
+```text
+帮我用最小数量市价买入 BTC。
+```
+
+```text
+帮我以 60000 的价格挂一个 BTC 限价买单，数量 0.01。
+```
+
+```text
+帮我市价卖出 0.1 个 ETH。
+```
+
+```text
+帮我把 SOL 的杠杆设置为 5 倍。
+```
+
+```text
+我现在有没有持仓？有的话帮我全部平掉。
+```
+
+```text
+我有没有挂着的订单？有的话全部取消。
+```
+
+```text
+帮我下一个 SOL 的限价买单，带上止盈止损。止盈设 +5%，止损设 -3%。
+```
+
+### Intermediate — Multi-step analysis
+
+Combine a few commands to make informed decisions.
+
+```text
+帮我对比一下 BTC、ETH、SOL 的价格和涨跌幅，整理成表格。
+```
+
+```text
+我想买一点 SOL，帮我查一下当前价格、最小下单量和我的余额，告诉我能不能买。
+```
+
+```text
+帮我查看 BTC 的盘口深度和 funding rate，告诉我现在多空哪边更强。
+```
+
+```text
+帮我挂一个 BTC 的限价买单，价格比当前价低 2%，数量用最小值。下单前告诉我具体参数让我确认。
+```
+
+```text
+帮我看看我所有持仓的盈亏情况，附上当前市价。如果有亏损超过 5% 的仓位，帮我平掉。
+```
+
+### Advanced — Complex workflows
+
+#### Market Snapshot
 
 ```text
 Use edgex-cli to give me a market snapshot:
@@ -141,9 +209,7 @@ Use edgex-cli to give me a market snapshot:
 Summarize everything in a clean table: asset, price, 24h change%, bid/ask spread, funding rate.
 ```
 
-### Technical Briefing
-
-> Generate a quick technical analysis from K-line data.
+#### Technical Briefing
 
 ```text
 Use edgex-cli to pull the last 50 hourly candles for BTC:
@@ -156,9 +222,7 @@ Then calculate and report:
 - A 1-paragraph trading outlook
 ```
 
-### Portfolio Dashboard
-
-> Check account status and present a clean portfolio view. (Requires setup)
+#### Portfolio Dashboard
 
 ```text
 Use edgex-cli to build me a portfolio dashboard:
@@ -173,9 +237,7 @@ Present a dashboard showing:
 - All pending orders
 ```
 
-### Multi-Asset Price Monitor
-
-> Compare crypto and stock assets side by side.
+#### Multi-Asset Price Monitor
 
 ```text
 Use edgex-cli to compare these assets:
@@ -189,9 +251,7 @@ Asset | Price | 24h Change | 24h Volume | Open Interest
 Sort by 24h change% descending. Add a note about which assets are outperforming.
 ```
 
-### Smart Order with Risk Check
-
-> Place an order only after validating risk parameters. (Requires setup)
+#### Smart Order with Risk Check
 
 ```text
 I want to open a small long position on SOL. Use edgex-cli to:
@@ -209,9 +269,7 @@ Based on the data:
   (TP at +5%, SL at -3%) but do NOT execute it — just show me the command to review.
 ```
 
-### Funding Rate Scanner
-
-> Find the best funding rate opportunities across all assets.
+#### Funding Rate Scanner
 
 ```text
 Use edgex-cli to scan funding rates:
