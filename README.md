@@ -130,70 +130,85 @@ Copy any prompt below and paste it to your AI assistant (Cursor, Claude, ChatGPT
 
 ### Beginner — Single-step prompts
 
-Simple one-liners to get started.
+Simple one-liners to get started. / 一句话即可上手。
 
 ```text
-BTC 现在多少钱？
+What's the current price of BTC?
+# 中文: BTC 现在多少钱？
 ```
 
 ```text
-查一下 ETH 和 SOL 的价格。
+Check the price of ETH and SOL.
+# 中文: 查一下 ETH 和 SOL 的价格。
 ```
 
 ```text
-查看我的账户余额。
+Show my account balance.
+# 中文: 查看我的账户余额。
 ```
 
 ```text
-帮我用最小数量市价买入 BTC。
+Market buy BTC with the minimum order size.
+# 中文: 帮我用最小数量市价买入 BTC。
 ```
 
 ```text
-帮我以 60000 的价格挂一个 BTC 限价买单，数量 0.01。
+Place a BTC limit buy order at 60000, size 0.01.
+# 中文: 帮我以 60000 的价格挂一个 BTC 限价买单，数量 0.01。
 ```
 
 ```text
-帮我市价卖出 0.1 个 ETH。
+Market sell 0.1 ETH.
+# 中文: 帮我市价卖出 0.1 个 ETH。
 ```
 
 ```text
-帮我把 SOL 的杠杆设置为 5 倍。
+Set SOL leverage to 5x.
+# 中文: 帮我把 SOL 的杠杆设置为 5 倍。
 ```
 
 ```text
-我现在有没有持仓？有的话帮我全部平掉。
+Do I have any open positions? If so, close them all.
+# 中文: 我现在有没有持仓？有的话帮我全部平掉。
 ```
 
 ```text
-我有没有挂着的订单？有的话全部取消。
+Do I have any pending orders? If so, cancel them all.
+# 中文: 我有没有挂着的订单？有的话全部取消。
 ```
 
 ```text
-帮我下一个 SOL 的限价买单，带上止盈止损。止盈设 +5%，止损设 -3%。
+Place a SOL limit buy with TP at +5% and SL at -3%.
+# 中文: 帮我下一个 SOL 的限价买单，带上止盈止损。止盈设 +5%，止损设 -3%。
 ```
 
 ### Intermediate — Multi-step analysis
 
-Combine a few commands to make informed decisions.
+Combine a few commands to make informed decisions. / 组合多个命令做出判断。
 
 ```text
-帮我对比一下 BTC、ETH、SOL 的价格和涨跌幅，整理成表格。
+Compare BTC, ETH, and SOL — show price and 24h change in a table.
+# 中文: 帮我对比一下 BTC、ETH、SOL 的价格和涨跌幅，整理成表格。
 ```
 
 ```text
-我想买一点 SOL，帮我查一下当前价格、最小下单量和我的余额，告诉我能不能买。
+I want to buy some SOL. Check the current price, minimum order size, and my balance. Tell me if I can afford it.
+# 中文: 我想买一点 SOL，帮我查一下当前价格、最小下单量和我的余额，告诉我能不能买。
 ```
 
 ```text
-帮我查看 BTC 的盘口深度和 funding rate，告诉我现在多空哪边更强。
+Check BTC order book depth and funding rate. Tell me whether bulls or bears are in control.
+# 中文: 帮我查看 BTC 的盘口深度和 funding rate，告诉我现在多空哪边更强。
 ```
 
 ```text
-帮我挂一个 BTC 的限价买单，价格比当前价低 2%，数量用最小值。下单前告诉我具体参数让我确认。
+Place a BTC limit buy 2% below the current price, use minimum size. Show me the parameters before executing.
+# 中文: 帮我挂一个 BTC 的限价买单，价格比当前价低 2%，数量用最小值。下单前告诉我具体参数让我确认。
 ```
 
 ```text
-帮我看看我所有持仓的盈亏情况，附上当前市价。如果有亏损超过 5% 的仓位，帮我平掉。
+Show PnL for all my open positions with current market prices. Close any position with loss > 5%.
+# 中文: 帮我看看我所有持仓的盈亏情况，附上当前市价。如果有亏损超过 5% 的仓位，帮我平掉。
 ```
 
 ### Advanced — Complex workflows
