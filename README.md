@@ -124,6 +124,111 @@ edgex stream trades SOL                # Real-time trades
 edgex stream account                   # Account/order updates (requires auth)
 ```
 
+## AI Agent Examples
+
+Copy any prompt below and paste it to your AI assistant (Cursor, Claude, ChatGPT, etc.). The AI will use the CLI to complete the task.
+
+### Market Snapshot
+
+> Get a comprehensive market overview of the top assets.
+
+```text
+Use edgex-cli to give me a market snapshot:
+1. Get the current price of BTC, ETH, and SOL (edgex --json market ticker <symbol>)
+2. Get the order book depth for BTC (edgex --json market depth BTC)
+3. Get the funding rate for BTC (edgex --json market funding BTC)
+
+Summarize everything in a clean table: asset, price, 24h change%, bid/ask spread, funding rate.
+```
+
+### Technical Briefing
+
+> Generate a quick technical analysis from K-line data.
+
+```text
+Use edgex-cli to pull the last 50 hourly candles for BTC:
+  edgex --json market kline BTC -i 1h -n 50
+
+Then calculate and report:
+- Current price vs 24h high/low
+- Approximate support/resistance levels from the candle data
+- Whether the trend is bullish or bearish based on recent price action
+- A 1-paragraph trading outlook
+```
+
+### Portfolio Dashboard
+
+> Check account status and present a clean portfolio view. (Requires setup)
+
+```text
+Use edgex-cli to build me a portfolio dashboard:
+1. Get my balances: edgex --json account balances
+2. Get my open positions: edgex --json account positions
+3. Get my active orders: edgex --json account orders
+4. For each position, get the current market price: edgex --json market ticker <symbol>
+
+Present a dashboard showing:
+- Total equity and available balance
+- Each position with entry price, current price, unrealized PnL, and PnL%
+- All pending orders
+```
+
+### Multi-Asset Price Monitor
+
+> Compare crypto and stock assets side by side.
+
+```text
+Use edgex-cli to compare these assets:
+  BTC, ETH, SOL, TSLA, NVDA, AAPL
+
+For each, run: edgex --json market ticker <symbol>
+
+Then create a comparison table with columns:
+Asset | Price | 24h Change | 24h Volume | Open Interest
+
+Sort by 24h change% descending. Add a note about which assets are outperforming.
+```
+
+### Smart Order with Risk Check
+
+> Place an order only after validating risk parameters. (Requires setup)
+
+```text
+I want to open a small long position on SOL. Use edgex-cli to:
+
+1. Check my balance: edgex --json account balances
+2. Check SOL price: edgex --json market ticker SOL
+3. Check max order size: edgex --json order max-size SOL
+4. Check SOL funding rate: edgex --json market funding SOL
+
+Based on the data:
+- Confirm I have enough balance
+- Calculate the minimum position size and its dollar value
+- Show me the funding cost per day
+- If everything looks OK, suggest the exact order command with appropriate TP/SL levels
+  (TP at +5%, SL at -3%) but do NOT execute it — just show me the command to review.
+```
+
+### Funding Rate Scanner
+
+> Find the best funding rate opportunities across all assets.
+
+```text
+Use edgex-cli to scan funding rates:
+  edgex --json market funding BTC
+  edgex --json market funding ETH
+  edgex --json market funding SOL
+
+Also check these stock contracts:
+  edgex --json market funding TSLA
+  edgex --json market funding NVDA
+  edgex --json market funding AAPL
+
+Create a table sorted by absolute funding rate (highest first).
+Flag any assets where |funding rate| > 0.01% as potential funding arbitrage opportunities.
+Explain briefly how a funding rate trade works.
+```
+
 ## Testnet
 
 Add `--testnet` to any command to use the testnet environment:

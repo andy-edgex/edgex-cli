@@ -227,15 +227,17 @@ export function registerOrderCommand(program: Command): void {
           starkPrivateKey,
         );
 
-        // For market orders, use aggressive limit price to guarantee fill
-        // (StarkEx has no native market orders — market = IOC limit at extreme price)
+        // EdgeX API requires price='0' for market orders; the L2 signature
+        // already embeds the aggressive price via l2-signer's l2Price calculation.
         let orderPrice: string;
+        let displayPrice: string | undefined;
         if (typeUpper === 'MARKET') {
+          orderPrice = '0';
           const oracle = parseFloat(oraclePrice || '0');
           if (sideUpper === 'BUY') {
-            orderPrice = String(Math.ceil(oracle * 1.1 * 100) / 100);
+            displayPrice = String(Math.ceil(oracle * 1.1 * 100) / 100);
           } else {
-            orderPrice = String(Math.floor(oracle * 0.9 * 100) / 100);
+            displayPrice = String(Math.floor(oracle * 0.9 * 100) / 100);
           }
         } else {
           orderPrice = opts.price!;
@@ -263,21 +265,53 @@ export function registerOrderCommand(program: Command): void {
           isSetOpenSl: false,
         };
 
-        // TP/SL
+        // TP/SL — each sub-order needs its own L2 signature
         if (opts.tp) {
+          const tpSide = (sideUpper === 'BUY' ? 'SELL' : 'BUY') as 'BUY' | 'SELL';
+          const tpL2 = computeL2OrderFields(
+            { side: tpSide, type: 'MARKET', size, oraclePrice: tpSide === 'BUY' ? opts.tp : undefined, accountId: client.currentAccountId! },
+            l2Meta,
+            starkPrivateKey,
+          );
           orderBody.isSetOpenTp = true;
           orderBody.openTp = {
-            side: sideUpper === 'BUY' ? 'SELL' : 'BUY',
-            price: opts.tp,
+            side: tpSide,
+            price: '0',
             size,
+            triggerPrice: opts.tp,
+            triggerPriceType: 'ORACLE_PRICE',
+            clientOrderId: tpL2.clientOrderId,
+            expireTime: tpL2.expireTime,
+            l2Nonce: tpL2.l2Nonce,
+            l2Value: tpL2.l2Value,
+            l2Size: tpL2.l2Size,
+            l2LimitFee: tpL2.l2LimitFee,
+            l2ExpireTime: tpL2.l2ExpireTime,
+            l2Signature: tpL2.l2Signature,
           };
         }
         if (opts.sl) {
+          const slSide = (sideUpper === 'BUY' ? 'SELL' : 'BUY') as 'BUY' | 'SELL';
+          const slL2 = computeL2OrderFields(
+            { side: slSide, type: 'MARKET', size, oraclePrice: slSide === 'BUY' ? opts.sl : undefined, accountId: client.currentAccountId! },
+            l2Meta,
+            starkPrivateKey,
+          );
           orderBody.isSetOpenSl = true;
           orderBody.openSl = {
-            side: sideUpper === 'BUY' ? 'SELL' : 'BUY',
-            price: opts.sl,
+            side: slSide,
+            price: '0',
             size,
+            triggerPrice: opts.sl,
+            triggerPriceType: 'ORACLE_PRICE',
+            clientOrderId: slL2.clientOrderId,
+            expireTime: slL2.expireTime,
+            l2Nonce: slL2.l2Nonce,
+            l2Value: slL2.l2Value,
+            l2Size: slL2.l2Size,
+            l2LimitFee: slL2.l2LimitFee,
+            l2ExpireTime: slL2.l2ExpireTime,
+            l2Signature: slL2.l2Signature,
           };
         }
 
@@ -291,7 +325,7 @@ export function registerOrderCommand(program: Command): void {
           console.error(`  Type:    ${typeColor}`);
           console.error(`  Size:    ${size}`);
           if (typeUpper === 'MARKET') {
-            console.error(`  Price:   ${chalk.red('MARKET')} (limit ${orderPrice})`);
+            console.error(`  Price:   ${chalk.red('MARKET')} (oracle ~${displayPrice})`);
           } else {
             console.error(`  Price:   ${orderPrice}`);
           }

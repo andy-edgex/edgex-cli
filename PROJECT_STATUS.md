@@ -111,9 +111,9 @@ edgex-cli/
 
 ---
 
-## 5.5、Mainnet 测试结果 (2026-03-02)
+## 5.5、Mainnet 测试结果 (2026-03-02, 第一轮)
 
-**凭证**: Account ID `723165789812687327` (余额 0, 未入金)
+**凭证**: Account ID `723165789812687327` (余额 11 USDC)
 
 | 功能 | 状态 |
 |---|---|
@@ -126,6 +126,87 @@ edgex-cli/
 | order status | ✅ 通过 (OPEN → 确认提示正常) |
 | order cancel | ✅ 通过 |
 | stream account (私有 WS) | ⏳ 未测试 |
+
+## 5.6、Mainnet 全量测试 (2026-03-02, 第二轮)
+
+**凭证**: Account ID `723165789812687327` (余额 ~111 USDC)
+**测试成本**: $0.079 (一次市价买卖往返)
+**修复了 2 个 bug**, 发现 2 个显示 bug
+
+### 测试结果
+
+| # | 功能 | 状态 | 备注 |
+|---|------|------|------|
+| 1 | `market ticker BTC` | ✅ | BTC ~$66,151 |
+| 2 | `market ticker SOL` | ✅ | SOL ~$83.64 |
+| 3 | `market ticker` (无参数) | ⚠️ | 返回 "No ticker data"，需传 symbol |
+| 4 | `market depth BTC` | ✅ | asks/bids 正常 |
+| 5 | `market funding BTC` | ✅ | fundingRate 正常 |
+| 6 | `market kline BTC -i 1h -n 5` | ✅ | |
+| 7 | `market summary` | ✅ | (多数字段为空) |
+| 8 | `market ratio BTC` | ✅ | |
+| 9 | `account balances` (human) | ⚠️ BUG | **字段名为空**，JSON 模式正常 |
+| 10 | `account balances` (json) | ✅ | 111.000198 USDC |
+| 11 | `account positions` | ✅ | 无持仓 |
+| 12 | `account orders` | ✅ | 无挂单 |
+| 13 | `account orders` (human) | ⚠️ BUG | **Order ID 列为空** |
+| 14 | `order max-size BTC` | ✅ | 0.016 BTC |
+| 15 | `order max-size SOL` | ✅ | 13.1 SOL |
+| 16 | `order create SOL buy limit 0.3 @$50 -y` | ✅ | orderId: 723304446922064351 |
+| 17 | `order cancel <id>` | ✅ | |
+| 18 | `order create SOL sell limit 0.3 @$200 -y` | ✅ | orderId: 723304898174648799 |
+| 19 | `order cancel <id>` | ✅ | |
+| 20 | 确认提示 `echo 'n'` | ✅ | 显示 Order Preview → "Order cancelled." |
+| 21 | `order create SOL buy market 0.3 -y` | ✅ | 修复后通过，orderId: 723305971786449375 |
+| 22 | 市价买后 positions | ✅ | SOL long 0.3, openValue $25.113 |
+| 23 | `order create SOL sell market 0.3 -y` | ✅ | orderId: 723306088694284767 |
+| 24 | 平仓后 positions | ✅ | 空 |
+| 25 | 余额变化 | ✅ | 111.000198 → 110.921136 (损耗 $0.079) |
+| 26 | cancel-all (2 单) | ✅ | 创建 2 单 → cancel-all → 清空 |
+| 27 | `stream ticker BTC` (WS) | ✅ | 实时推送，8s 内收到 5+ 条 |
+| 28 | `--json market ticker BTC` | ✅ | 合法 JSON array |
+| 29 | `--json market depth BTC` | ✅ | 含 asks/bids |
+| 30 | `--json order max-size BTC` | ✅ | |
+| 31 | 限价缺 --price | ✅ | `--price is required for limit orders`, exit 1 |
+| 32 | 无效 side | ✅ | `Side must be "buy" or "sell"`, exit 1 |
+| 33 | 无效 type | ✅ | `Type must be "limit" or "market"`, exit 1 |
+| 34 | 未知 symbol | ✅ | `Unknown symbol: ZZZZZ`, exit 1 |
+| 35 | `--version` | ✅ | 0.1.0 |
+| 36 | `--help` | ✅ | 显示所有命令 |
+| 37 | 未知命令 | ✅ | `unknown command 'foobar'`, exit 1 |
+| 38 | TSLA 限价买 0.3@$200 → 取消 | ✅ | 美股合约下单正常 |
+| 39 | TSLA 限价卖 0.3@$600 → 取消 | ✅ | |
+| 40 | TSLA 市价买卖往返 0.3 | ✅ | 开仓 $117.558, 损耗 $0.206 |
+| 41 | 限价单 + TP only | ✅ | 修复后通过 |
+| 42 | 限价单 + TP + SL 组合 | ✅ | 修复后通过 |
+| 43 | 市价单 + TP@$120 + SL@$60 | ✅ | TAKE_PROFIT_MARKET + STOP_MARKET 生成 |
+| 44 | TP/SL 状态验证 | ✅ | `UNTRIGGERED`, `isPositionTpsl: true`, `reduceOnly: true` |
+| 45 | 平仓后 TP/SL 自动取消 | ✅ | 卖出平仓后 TP/SL 挂单自动清除 |
+
+### 修复的 Bug
+
+**Bug #5 (P0): 市价单 API price 字段应为 '0'**
+- 文件: `src/commands/order.ts`
+- 原因: 代码将 `oracle * 1.1` (BUY) 或 `oracle * 0.9` (SELL) 作为 API 的 `price` 字段
+- API 错误: `INVALID_ORDER_MARKET_PRICE: The market order price must be zero`
+- 修复: API body 的 `price` 设为 `'0'`；L2 签名的 l2Price 保持不变（由 l2-signer 内部计算）
+
+**Bug #6 (P0): l2Value 浮点精度超过 API step size**
+- 文件: `src/core/l2-signer.ts`
+- 原因: `l2Price * size` 产生 JS 浮点数如 `251.29499996546656`（14 位小数）
+- API 错误: `INVALID_ORDER_L2_VALUE: matches the step size '0.000001' requirement`
+- 修复: `l2Value = parseFloat((l2Price * size).toFixed(6))`
+
+**Bug #7 (P0): TP/SL 子订单缺少 L2 签名**
+- 文件: `src/commands/order.ts`
+- 原因: `openTp`/`openSl` 只传了 side/price/size/triggerPrice，缺少 L2 签名字段
+- API 错误: `GATEWAY_INTERNAL_ERROR: unknown error`
+- 修复: 为每个 TP/SL 独立调用 `computeL2OrderFields()` 生成完整的 L2 签名（l2Nonce/l2Value/l2Size/l2LimitFee/l2ExpireTime/l2Signature），同时添加 triggerPrice/triggerPriceType/clientOrderId/expireTime
+
+### 发现的显示 Bug (P1, 未修复)
+
+1. **`account balances` human 模式字段为空**: JSON 返回正常，但 human 模式未正确读取嵌套字段
+2. **`account orders` Order ID 列为空**: API 返回的字段名可能与代码读取的不一致
 
 ---
 

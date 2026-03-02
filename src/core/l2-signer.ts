@@ -114,7 +114,8 @@ export function computeL2OrderFields(
     l2Price = parseFloat(input.price || '0');
   }
 
-  const l2Value = l2Price * size;
+  const l2ValueRaw = l2Price * size;
+  const l2Value = parseFloat(l2ValueRaw.toFixed(6));
   const limitFee = Math.ceil(size * l2Price * feeRate);
 
   const now = Date.now();
