@@ -25,14 +25,37 @@ export class ConfigError extends EdgexError {
   }
 }
 
-export function handleError(err: unknown): never {
+export function handleError(err: unknown, format?: string): never {
+  let errorMsg = 'An unknown error occurred';
+  let errorCode: string | undefined;
+
   if (err instanceof EdgexError) {
-    const prefix = err.code ? `[${err.code}] ` : '';
-    console.error(chalk.red(`Error: ${prefix}${err.message}`));
+    errorCode = err.code;
+    errorMsg = err.message;
   } else if (err instanceof Error) {
-    console.error(chalk.red(`Error: ${err.message}`));
-  } else {
-    console.error(chalk.red('An unknown error occurred'));
+    errorMsg = err.message;
   }
+
+  if (format === 'json') {
+    const errorObj: Record<string, unknown> = {
+      success: false,
+      error: errorMsg,
+    };
+    if (errorCode) {
+      errorObj.code = errorCode;
+    }
+    console.log(JSON.stringify(errorObj, null, 2));
+  } else {
+    // Human readable output
+    if (err instanceof EdgexError) {
+      const prefix = err.code ? `[${err.code}] ` : '';
+      console.error(chalk.red(`Error: ${prefix}${err.message}`));
+    } else if (err instanceof Error) {
+      console.error(chalk.red(`Error: ${err.message}`));
+    } else {
+      console.error(chalk.red('An unknown error occurred'));
+    }
+  }
+
   process.exit(1);
 }

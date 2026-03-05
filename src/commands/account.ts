@@ -61,7 +61,7 @@ export function registerAccountCommand(program: Command): void {
             ['Unrealized PnL', formatPnl(String(d.unrealizedPnl ?? d.totalUnrealizedPnl ?? '0'))],
           ]);
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── positions ───
@@ -95,7 +95,7 @@ export function registerAccountCommand(program: Command): void {
             ]),
           );
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── orders ───
@@ -135,7 +135,7 @@ export function registerAccountCommand(program: Command): void {
             }),
           );
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── leverage ───
@@ -155,6 +155,6 @@ export function registerAccountCommand(program: Command): void {
         output(fmt, data, () => {
           console.log(chalk.green(`Leverage set to ${multiplier}x for ${contract.contractName}`));
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 }

@@ -72,3 +72,21 @@ export EDGEX_STARK_PRIVATE_KEY=0x...
 ## Contracts
 
 EdgeX supports 290+ perpetual contracts including crypto (BTC, ETH, SOL, etc.) and US equity contracts.
+
+## AI Agent Best Practices
+
+When using this tool as an AI agent, follow these standard operating procedures:
+
+1. **Pre-trade Checks**: Always execute `edgex account balances --json` to verify sufficient funds before attempting to place any orders.
+2. **Market Order Volatility**: BE EXTREMELY CAREFUL with `market` orders. Always check `edgex market depth <symbol> --json` before executing large market orders to avoid catastrophic slippage.
+3. **Calculation First**: For precise position sizing, always query `edgex market ticker <symbol> --json` and `edgex order max-size <symbol> --json` to perform math *before* constructing the `order create` command.
+4. **State Verification**: After placing an order, query `edgex account positions --json` or `edgex account orders --json` to confirm the transaction state.
+
+## Error Recovery Guide
+
+If you receive a JSON output with `"success": false` and an `"error"` message, use these heuristics to self-correct:
+
+- **`INSUFFICIENT_FUNDS` or similar terminology**: The order size is too large for the available margin. Run `edgex account balances --json` to check available capital, and reduce the `--size` parameter.
+- **`Unknown symbol`**: The contract ticker you provided does not exist. Verify the ticker using external knowledge or use the ID instead.
+- **`--price is required for limit orders`**: You attempted to place a `limit` order without specifying the price. Add `--price <value>` to your command.
+- **Network/Timeout Errors**: The EdgeX API or WebSocket may be temporarily down. Wait 5-10 seconds and retry the read-only command. Provide the user with a status update if it persists.

@@ -23,6 +23,7 @@ export interface L2OrderInput {
   price?: string;
   oraclePrice?: string;
   accountId: string;
+  clientId?: string;
 }
 
 export interface L2OrderFields {

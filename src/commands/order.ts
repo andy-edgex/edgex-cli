@@ -8,6 +8,7 @@ import { loadCachedContracts, saveCachedContracts, resolveSymbol, getCachedCoins
 import { computeL2OrderFields, type L2OrderMeta } from '../core/l2-signer.js';
 import { output, printKeyValue } from '../utils/output.js';
 import { handleError, EdgexError } from '../utils/errors.js';
+import { buildOrderPayload } from '../core/order-service.js';
 
 let client: EdgexClient;
 let contracts: ContractMeta[];
@@ -99,7 +100,7 @@ export function registerOrderCommand(program: Command): void {
             ['Created', d.createdTime ? new Date(Number(d.createdTime)).toLocaleString() : ''],
           ]);
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── cancel ───
@@ -117,7 +118,7 @@ export function registerOrderCommand(program: Command): void {
         output(fmt, data, () => {
           console.log(chalk.green(`Cancelled ${ids.length} order(s): ${ids.join(', ')}`));
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── cancel-all ───
@@ -137,7 +138,7 @@ export function registerOrderCommand(program: Command): void {
           const scope = opts.symbol ? ` for ${opts.symbol}` : '';
           console.log(chalk.green(`All orders cancelled${scope}`));
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── max-size ───
@@ -163,7 +164,7 @@ export function registerOrderCommand(program: Command): void {
             ['Max Sell Size', String(d.maxSellSize ?? d.maxSellOrderSize ?? 'N/A')],
           ]);
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── create ───
@@ -212,108 +213,20 @@ export function registerOrderCommand(program: Command): void {
           }
         }
 
-        // Compute L2 signing fields
-        const l2Meta = getL2Meta(contract);
-        const l2Fields = computeL2OrderFields(
-          {
-            side: sideUpper,
-            type: typeUpper,
-            size,
-            price: opts.price,
-            oraclePrice,
-            accountId: client.currentAccountId!,
-          },
-          l2Meta,
+        const { orderBody, l2Fields, displayPrice, orderPrice } = buildOrderPayload({
+          contract,
+          coins,
           starkPrivateKey,
-        );
-
-        // EdgeX API requires price='0' for market orders; the L2 signature
-        // already embeds the aggressive price via l2-signer's l2Price calculation.
-        let orderPrice: string;
-        let displayPrice: string | undefined;
-        if (typeUpper === 'MARKET') {
-          orderPrice = '0';
-          const oracle = parseFloat(oraclePrice || '0');
-          if (sideUpper === 'BUY') {
-            displayPrice = String(Math.ceil(oracle * 1.1 * 100) / 100);
-          } else {
-            displayPrice = String(Math.floor(oracle * 0.9 * 100) / 100);
-          }
-        } else {
-          orderPrice = opts.price!;
-        }
-
-        // Build order body
-        const orderBody: Record<string, unknown> = {
-          contractId: contract.contractId,
-          price: orderPrice,
-          size,
-          type: typeUpper,
+          accountId: client.currentAccountId!,
           side: sideUpper,
-          timeInForce: typeUpper === 'MARKET' ? 'IMMEDIATE_OR_CANCEL' : 'GOOD_TIL_CANCEL',
-          reduceOnly: false,
-          clientOrderId: l2Fields.clientOrderId,
-          expireTime: l2Fields.expireTime,
-          l2Nonce: l2Fields.l2Nonce,
-          l2Value: l2Fields.l2Value,
-          l2Size: l2Fields.l2Size,
-          l2LimitFee: l2Fields.l2LimitFee,
-          l2ExpireTime: l2Fields.l2ExpireTime,
-          l2Signature: l2Fields.l2Signature,
-          isPositionTpsl: false,
-          isSetOpenTp: false,
-          isSetOpenSl: false,
-        };
-
-        // TP/SL — each sub-order needs its own L2 signature
-        if (opts.tp) {
-          const tpSide = (sideUpper === 'BUY' ? 'SELL' : 'BUY') as 'BUY' | 'SELL';
-          const tpL2 = computeL2OrderFields(
-            { side: tpSide, type: 'MARKET', size, oraclePrice: tpSide === 'BUY' ? opts.tp : undefined, accountId: client.currentAccountId! },
-            l2Meta,
-            starkPrivateKey,
-          );
-          orderBody.isSetOpenTp = true;
-          orderBody.openTp = {
-            side: tpSide,
-            price: '0',
-            size,
-            triggerPrice: opts.tp,
-            triggerPriceType: 'ORACLE_PRICE',
-            clientOrderId: tpL2.clientOrderId,
-            expireTime: tpL2.expireTime,
-            l2Nonce: tpL2.l2Nonce,
-            l2Value: tpL2.l2Value,
-            l2Size: tpL2.l2Size,
-            l2LimitFee: tpL2.l2LimitFee,
-            l2ExpireTime: tpL2.l2ExpireTime,
-            l2Signature: tpL2.l2Signature,
-          };
-        }
-        if (opts.sl) {
-          const slSide = (sideUpper === 'BUY' ? 'SELL' : 'BUY') as 'BUY' | 'SELL';
-          const slL2 = computeL2OrderFields(
-            { side: slSide, type: 'MARKET', size, oraclePrice: slSide === 'BUY' ? opts.sl : undefined, accountId: client.currentAccountId! },
-            l2Meta,
-            starkPrivateKey,
-          );
-          orderBody.isSetOpenSl = true;
-          orderBody.openSl = {
-            side: slSide,
-            price: '0',
-            size,
-            triggerPrice: opts.sl,
-            triggerPriceType: 'ORACLE_PRICE',
-            clientOrderId: slL2.clientOrderId,
-            expireTime: slL2.expireTime,
-            l2Nonce: slL2.l2Nonce,
-            l2Value: slL2.l2Value,
-            l2Size: slL2.l2Size,
-            l2LimitFee: slL2.l2LimitFee,
-            l2ExpireTime: slL2.l2ExpireTime,
-            l2Signature: slL2.l2Signature,
-          };
-        }
+          type: typeUpper,
+          size,
+          price: opts.price,
+          oraclePrice,
+          tp: opts.tp,
+          sl: opts.sl,
+          clientId: opts.clientId,
+        });
 
         if (!opts.yes) {
           const sideColor = sideUpper === 'BUY' ? chalk.green(sideUpper) : chalk.red(sideUpper);
@@ -359,6 +272,6 @@ export function registerOrderCommand(program: Command): void {
             ['Price', opts.price ?? 'MARKET'],
           ]);
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 }

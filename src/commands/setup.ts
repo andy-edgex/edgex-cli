@@ -84,7 +84,7 @@ export function registerSetupCommand(program: Command): void {
         await saveConfig(config);
         console.log(chalk.green(`\n[${network}] Configuration saved to ${getConfigPath()}`));
       } catch (err) {
-        handleError(err);
+        handleError(err, program.optsWithGlobals().json ? 'json' : 'human');
       }
     });
 }

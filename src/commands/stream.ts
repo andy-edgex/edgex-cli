@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import type { ContractMeta } from '../core/types.js';
+import type { ContractMeta, OutputFormat } from '../core/types.js';
 import { KLINE_INTERVALS } from '../core/types.js';
 import { EdgexClient } from '../core/client.js';
 import { EdgexWebSocket } from '../core/ws.js';
@@ -10,6 +10,10 @@ import { loadCachedContracts, saveCachedContracts, resolveSymbol } from '../core
 import { handleError, EdgexError } from '../utils/errors.js';
 
 let contracts: ContractMeta[];
+
+function getFormat(cmd: Command): OutputFormat {
+  return cmd.optsWithGlobals().json ? 'json' : 'human';
+}
 
 async function initContracts(): Promise<void> {
   const config = await loadConfig();
@@ -103,13 +107,13 @@ export function registerStreamCommand(program: Command): void {
   stream
     .command('ticker <symbol>')
     .description('Stream real-time ticker updates')
-    .action(async (symbol: string) => {
+    .action(async (symbol: string, _opts: unknown, cmd: Command) => {
       try {
         await initContracts();
         const contract = requireSymbol(symbol);
         process.stderr.write(chalk.gray(`Streaming ticker for ${contract.contractName}... (Ctrl+C to stop)\n`));
         connectPublic([`ticker.${contract.contractId}`]);
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── depth ───
@@ -118,13 +122,13 @@ export function registerStreamCommand(program: Command): void {
     .command('depth <symbol>')
     .description('Stream real-time order book')
     .option('-l, --level <level>', 'Depth levels: 15 or 200', '15')
-    .action(async (symbol: string, opts: { level: string }) => {
+    .action(async (symbol: string, opts: { level: string }, cmd: Command) => {
       try {
         await initContracts();
         const contract = requireSymbol(symbol);
         process.stderr.write(chalk.gray(`Streaming depth for ${contract.contractName}... (Ctrl+C to stop)\n`));
         connectPublic([`depth.${contract.contractId}.${opts.level}`]);
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── kline ───
@@ -133,7 +137,7 @@ export function registerStreamCommand(program: Command): void {
     .command('kline <symbol>')
     .description('Stream real-time kline updates')
     .option('-i, --interval <interval>', 'Interval: 1m/5m/15m/1h/4h/1d', '1m')
-    .action(async (symbol: string, opts: { interval: string }) => {
+    .action(async (symbol: string, opts: { interval: string }, cmd: Command) => {
       try {
         await initContracts();
         const contract = requireSymbol(symbol);
@@ -141,7 +145,7 @@ export function registerStreamCommand(program: Command): void {
         if (!klineType) throw new EdgexError(`Invalid interval: ${opts.interval}`);
         process.stderr.write(chalk.gray(`Streaming kline for ${contract.contractName} (${opts.interval})... (Ctrl+C to stop)\n`));
         connectPublic([`kline.LAST_PRICE.${contract.contractId}.${klineType}`]);
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── trades ───
@@ -149,13 +153,13 @@ export function registerStreamCommand(program: Command): void {
   stream
     .command('trades <symbol>')
     .description('Stream real-time trades')
-    .action(async (symbol: string) => {
+    .action(async (symbol: string, _opts: unknown, cmd: Command) => {
       try {
         await initContracts();
         const contract = requireSymbol(symbol);
         process.stderr.write(chalk.gray(`Streaming trades for ${contract.contractName}... (Ctrl+C to stop)\n`));
         connectPublic([`trades.${contract.contractId}`]);
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── account ───
@@ -163,10 +167,10 @@ export function registerStreamCommand(program: Command): void {
   stream
     .command('account')
     .description('Stream account/order/position updates (requires auth)')
-    .action(async () => {
+    .action(async (_opts: unknown, cmd: Command) => {
       try {
         process.stderr.write(chalk.gray('Streaming account updates... (Ctrl+C to stop)\n'));
         await connectPrivate();
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 }

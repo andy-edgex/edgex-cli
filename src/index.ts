@@ -7,6 +7,7 @@ import { registerSetupCommand } from './commands/setup.js';
 import { registerAccountCommand } from './commands/account.js';
 import { registerOrderCommand } from './commands/order.js';
 import { registerStreamCommand } from './commands/stream.js';
+import { startMcpServer } from './mcp/server.js';
 
 const program = new Command();
 
@@ -24,6 +25,13 @@ program.hook('preAction', (thisCommand) => {
     process.stderr.write(chalk.yellow('[TESTNET] ') + chalk.gray('Using testnet environment\n'));
   }
 });
+
+program
+  .command('serve-mcp', { hidden: true })
+  .description('Start the EdgeX MCP server on stdio')
+  .action(() => {
+    startMcpServer();
+  });
 
 registerSetupCommand(program);
 registerMarketCommand(program);

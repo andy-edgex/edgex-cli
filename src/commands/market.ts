@@ -71,7 +71,7 @@ export function registerMarketCommand(program: Command): void {
             ]),
           );
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── depth ───
@@ -104,7 +104,7 @@ export function registerMarketCommand(program: Command): void {
           }
           console.log(chalk.green.bold('  Bids (buy)'));
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── kline ───
@@ -143,7 +143,7 @@ export function registerMarketCommand(program: Command): void {
             ]),
           );
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── funding ───
@@ -177,7 +177,7 @@ export function registerMarketCommand(program: Command): void {
             }),
           );
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── summary ───
@@ -201,7 +201,7 @@ export function registerMarketCommand(program: Command): void {
             ['Open Interest', summary.openInterest ?? 'N/A'],
           ]);
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 
   // ─── ratio ───
@@ -234,6 +234,6 @@ export function registerMarketCommand(program: Command): void {
             ]),
           );
         });
-      } catch (err) { handleError(err); }
+      } catch (err) { handleError(err, getFormat(cmd)); }
     });
 }
