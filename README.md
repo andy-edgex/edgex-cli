@@ -16,16 +16,9 @@ Built for traders and AI agents. All commands support `--json` output for progra
 ## Install
 
 ```bash
-npm install -g @realnaka/edgex-cli
-```
-
-Or from source:
-
-```bash
-git clone https://github.com/realnaka/edgex-cli.git
+git clone https://github.com/andy-edgex/edgex-cli.git
 cd edgex-cli
-npm install
-npm run build    # required — compiles TypeScript to dist/
+npm install --omit=dev
 npm link         # makes "edgex" command available globally
 ```
 
