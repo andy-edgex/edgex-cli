@@ -739,6 +739,39 @@ server.tool(
 );
 
 // ═══════════════════════════════════════════
+//  ON-CHAIN DEPOSIT TRACKING
+// ═══════════════════════════════════════════
+
+server.tool(
+  'edgex_get_deposit_status',
+  'Track deposit status by tx hash using on-chain RPC queries. Works for cross-chain deposits (Arb/Eth/BSC → EdgeX) and direct Edge chain deposits. No backend API needed. Returns status: not_found, pending, failed, confirmed (source chain ok, awaiting relay), or credited (Edge chain confirmed).',
+  {
+    txHash: z.string().describe('Transaction hash from the source chain deposit'),
+    chain: z.string().optional().describe('Only query a specific chain: edge, arb, eth, bsc. Omit to auto-detect.'),
+  },
+  async ({ txHash, chain }) => {
+    try {
+      const { trackDeposit, getDefaultChains } = await import('../core/deposit-tracker.js');
+      const config = await loadConfig();
+      let chains = getDefaultChains(config.edgeChainRpcUrl);
+
+      if (chain) {
+        const filter = chain.toLowerCase();
+        const map: Record<string, string> = {
+          edge: 'Edge Chain', arb: 'Arbitrum', arbitrum: 'Arbitrum',
+          eth: 'Ethereum', ethereum: 'Ethereum', bsc: 'BSC',
+        };
+        const target = map[filter];
+        if (target) chains = chains.filter(c => c.name === target);
+      }
+
+      const result = await trackDeposit(txHash, chains);
+      return textResult(result);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+// ═══════════════════════════════════════════
 //  REGRESSION TEST TOOLS
 // ═══════════════════════════════════════════
 
