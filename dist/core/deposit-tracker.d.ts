@@ -30,6 +30,6 @@ export interface DepositStatusResult {
     timestamp?: number;
     error?: string;
 }
-export declare function getDefaultChains(edgeChainRpcUrl: string): ChainConfig[];
+export declare function getDefaultChains(edgeChainRpcUrl: string, testnet?: boolean): ChainConfig[];
 export declare function trackDeposit(txHash: string, chains: ChainConfig[]): Promise<DepositStatusResult>;
 //# sourceMappingURL=deposit-tracker.d.ts.map

@@ -23,14 +23,26 @@ const NATIVE_TOKEN = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 // Known token decimals (lowercase address → decimals)
 const TOKEN_DECIMALS = {
     [NATIVE_TOKEN]: 18,
-    // Edge chain USDC
+    // Mainnet — Edge chain USDC
     '0xd8e20462edce38434616cc6a6a560bb76b582ed8': 6,
-    // Arb USDC
+    // Mainnet — Arb USDC
     '0xaf88d065e77c8cc2239327c5edb3a432268e5831': 6,
-    // Arb USDT
+    // Mainnet — Arb USDT
     '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9': 6,
-    // Eth USDT
+    // Mainnet — Eth USDT
     '0xdac17f958d2ee523a2206206994597c13d831ec7': 6,
+    // Testnet — Edge chain USDC
+    '0x2d9f7cad728051aa35ecdc472a14cf8cdf5cfd6b': 6,
+    // Testnet — Arb Sepolia USDC
+    '0x608babb39bb03c038b8dabc3d4bf4e0d02d455cd': 6,
+    // Testnet — Arb Sepolia USDT
+    '0x5e2522c505a543fa2714c617e3cd133a6daa9627': 6,
+    // Testnet — Eth Sepolia USDC
+    '0xd98b590ebe0a3ed8c144170ba4122d402182976f': 6,
+    // Testnet — BSC Testnet USDC
+    '0xda6c748a7593826e410183f05893dbb363d025a1': 6,
+    // Testnet — Polygon USDC
+    '0x2791bca1f2de4661ed88a30c99a7a9449aa84174': 6,
 };
 function getDecimals(token) {
     return TOKEN_DECIMALS[token.toLowerCase()] ?? 18;
@@ -39,13 +51,23 @@ function getAssetName(token) {
     const t = token.toLowerCase();
     if (t === NATIVE_TOKEN)
         return 'ETH';
-    if (t === '0xd8e20462edce38434616cc6a6a560bb76b582ed8')
+    // USDC tokens (mainnet + testnet)
+    if ([
+        '0xd8e20462edce38434616cc6a6a560bb76b582ed8',
+        '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
+        '0x2d9f7cad728051aa35ecdc472a14cf8cdf5cfd6b',
+        '0x608babb39bb03c038b8dabc3d4bf4e0d02d455cd',
+        '0xd98b590ebe0a3ed8c144170ba4122d402182976f',
+        '0xda6c748a7593826e410183f05893dbb363d025a1',
+        '0x2791bca1f2de4661ed88a30c99a7a9449aa84174',
+    ].includes(t))
         return 'USDC';
-    if (t === '0xaf88d065e77c8cc2239327c5edb3a432268e5831')
-        return 'USDC';
-    if (t === '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9')
-        return 'USDT';
-    if (t === '0xdac17f958d2ee523a2206206994597c13d831ec7')
+    // USDT tokens (mainnet + testnet)
+    if ([
+        '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
+        '0xdac17f958d2ee523a2206206994597c13d831ec7',
+        '0x5e2522c505a543fa2714c617e3cd133a6daa9627',
+    ].includes(t))
         return 'USDT';
     return 'UNKNOWN';
 }
@@ -145,7 +167,44 @@ async function getBlockTimestamp(rpcUrl, blockNumber) {
     return undefined;
 }
 // ─── Main tracker ───
-export function getDefaultChains(edgeChainRpcUrl) {
+export function getDefaultChains(edgeChainRpcUrl, testnet = false) {
+    if (testnet) {
+        return [
+            {
+                name: 'Edge Chain (Testnet)',
+                chainId: 33431,
+                rpcUrl: edgeChainRpcUrl,
+                knownContracts: {
+                    '0x3ea4106bb691c3e9f657f8baf1345473e86658c6': 'SpotVault',
+                },
+            },
+            {
+                name: 'Arbitrum Sepolia',
+                chainId: 421614,
+                rpcUrl: 'https://rpc.edgex.exchange/RMZZpeTnB6hjfcm8xNNyo6cKa9Zn4qgB/arbitrum-sepolia',
+                knownContracts: {
+                    '0xa581088edfe121f27a8f2e54e618da7016949928': 'USDC Bridge',
+                    '0xc00fa43312312598247bb8f48747b27a0a3a079d': 'USDT Bridge',
+                },
+            },
+            {
+                name: 'Ethereum Sepolia',
+                chainId: 11155111,
+                rpcUrl: 'https://rpc.edgex.exchange/RMZZpeTnB6hjfcm8xNNyo6cKa9Zn4qgB/eth-sepolia',
+                knownContracts: {
+                    '0x9d982eaf8b7c29c19d6d1b98ae6f17776955508e': 'USDC Bridge',
+                },
+            },
+            {
+                name: 'BSC Testnet',
+                chainId: 97,
+                rpcUrl: 'https://rpc.edgex.exchange/RMZZpeTnB6hjfcm8xNNyo6cKa9Zn4qgB/bsc-testnet',
+                knownContracts: {
+                    '0xd536f42bfb508534bfe7cb71b8931ddaa66feb95': 'USDC Bridge',
+                },
+            },
+        ];
+    }
     return [
         {
             name: 'Edge Chain',
@@ -242,7 +301,7 @@ export async function trackDeposit(txHash, chains) {
     const toAddr = receipt.to?.toLowerCase() ?? '';
     const contractName = chain.knownContracts[toAddr];
     // Parse logs and input data based on chain type
-    if (chain.chainId === 3343) {
+    if (chain.chainId === 3343 || chain.chainId === 33431) {
         // Edge chain — look for SpotVault.Deposit or RelayDepositSucceeded
         result.status = 'credited'; // If tx succeeded on Edge chain, funds are credited
         for (const log of receipt.logs) {

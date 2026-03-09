@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import type { OutputFormat } from '../core/types.js';
-import { loadConfig } from '../core/config.js';
+import { loadConfig, isTestnet } from '../core/config.js';
 import { trackDeposit, getDefaultChains } from '../core/deposit-tracker.js';
 import { output, printKeyValue } from '../utils/output.js';
 import { handleError } from '../utils/errors.js';
@@ -19,14 +19,20 @@ export function registerDepositStatusCommand(program: Command): void {
       try {
         const config = await loadConfig();
         const fmt = getFormat(cmd);
-        let chains = getDefaultChains(config.edgeChainRpcUrl);
+        const testnet = isTestnet();
+        let chains = getDefaultChains(config.edgeChainRpcUrl, testnet);
 
         if (opts.chain) {
           const filter = opts.chain.toLowerCase();
-          const map: Record<string, string> = {
-            edge: 'Edge Chain', arb: 'Arbitrum', arbitrum: 'Arbitrum',
-            eth: 'Ethereum', ethereum: 'Ethereum', bsc: 'BSC',
-          };
+          const map: Record<string, string> = testnet
+            ? {
+                edge: 'Edge Chain (Testnet)', arb: 'Arbitrum Sepolia', arbitrum: 'Arbitrum Sepolia',
+                eth: 'Ethereum Sepolia', ethereum: 'Ethereum Sepolia', bsc: 'BSC Testnet',
+              }
+            : {
+                edge: 'Edge Chain', arb: 'Arbitrum', arbitrum: 'Arbitrum',
+                eth: 'Ethereum', ethereum: 'Ethereum', bsc: 'BSC',
+              };
           const target = map[filter];
           if (target) chains = chains.filter(c => c.name === target);
         }
@@ -58,7 +64,7 @@ export function registerDepositStatusCommand(program: Command): void {
 
           printKeyValue(pairs);
 
-          if (result.status === 'confirmed' && result.chain !== 'Edge Chain') {
+          if (result.status === 'confirmed' && !result.chain.startsWith('Edge Chain')) {
             console.log(chalk.gray('\n  Source chain confirmed. Awaiting CCTP relay to Edge chain.'));
           }
         });
