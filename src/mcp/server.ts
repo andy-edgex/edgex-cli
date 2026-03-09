@@ -68,11 +68,12 @@ const KLINE_MAP: Record<string, string> = {
 // ─── Server Setup ───
 
 const server = new McpServer(
-  { name: 'edgex', version: '0.1.2' },
+  { name: 'edgex', version: '0.2.0' },
   {
     instructions: `EdgeX MCP server for perpetual contract trading on EdgeX exchange.
 
 Key rules for AI agents:
+- CALL edgex_get_auth_status FIRST at the start of every session to verify credentials.
 - Call edgex_get_environment to see current baseUrl and whether you are on testnet or mainnet (environment: "testnet" | "mainnet"). Like CLI --testnet, this is determined by EDGEX_TESTNET=1.
 - ALWAYS check edgex_get_balances and edgex_get_max_size before placing orders.
 - ALWAYS confirm order parameters with the user before calling edgex_place_order.
@@ -81,6 +82,7 @@ Key rules for AI agents:
 - Funding rate is a decimal: "0.0001" = 0.01%. Positive = longs pay shorts.
 - EdgeX uses cross-margin by default. All positions share collateral.
 - Oracle Price is used for liquidation, not last traded price.
+- Use edgex_run_tests and edgex_list_tests for regression testing.
 
 Read the resources 'edgex://trading-rules' and 'edgex://agent-guidelines' for detailed trading rules and best practices.`,
   },
@@ -148,6 +150,41 @@ server.tool(
         environment: testnet ? 'testnet' : 'mainnet',
       };
       return textResult(env);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+// ═══════════════════════════════════════════
+//  AUTH STATUS (call first)
+// ═══════════════════════════════════════════
+
+server.tool(
+  'edgex_get_auth_status',
+  'Check if EdgeX credentials are configured. CALL THIS FIRST at the start of every session. Returns authentication status and setup instructions if not configured.',
+  {},
+  async () => {
+    try {
+      const config = await loadConfig();
+      const hasAccountId = !!config.accountId;
+      const hasPrivateKey = !!config.starkPrivateKey;
+      const authenticated = hasAccountId && hasPrivateKey;
+
+      const result: Record<string, unknown> = {
+        authenticated,
+        accountId: hasAccountId ? config.accountId : null,
+        environment: isTestnet() ? 'testnet' : 'mainnet',
+        baseUrl: config.baseUrl,
+      };
+
+      if (!authenticated) {
+        result.setupInstructions = [
+          'Run "edgex setup" to configure credentials interactively.',
+          'Or set environment variables: EDGEX_ACCOUNT_ID and EDGEX_STARK_PRIVATE_KEY.',
+          'For testnet, also set EDGEX_TESTNET=1.',
+        ];
+      }
+
+      return textResult(result);
     } catch (e: any) { return errorResult(e.message); }
   },
 );
@@ -473,6 +510,276 @@ server.tool(
       const data = await c.cancelAllOrder(contractId);
       return textResult(data);
     } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+// ═══════════════════════════════════════════
+//  ACCOUNT EXTENDED TOOLS
+// ═══════════════════════════════════════════
+
+server.tool(
+  'edgex_get_account_info',
+  'Get full account details including settings, leverage, and registration info.',
+  {},
+  async () => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getAccountById();
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_position_transactions',
+  'Get position transaction history (opens, closes, liquidations).',
+  {
+    symbol: z.string().optional().describe('Filter by symbol'),
+    size: z.string().optional().describe('Page size (default: 20)'),
+  },
+  async ({ symbol, size }) => {
+    try {
+      const c = await ensureClient();
+      let filterContractIdList: string[] | undefined;
+      if (symbol) {
+        const contract = await resolve(symbol);
+        filterContractIdList = [contract.contractId];
+      }
+      const data = await c.getPositionTransactionPage({ size: size ?? '20', filterContractIdList });
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_collateral_transactions',
+  'Get collateral transaction history (deposits, withdrawals, funding).',
+  { size: z.string().optional().describe('Page size (default: 20)') },
+  async ({ size }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getCollateralTransactionPage({ size: size ?? '20' });
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_position_terms',
+  'Get closed position history (position terms).',
+  {
+    symbol: z.string().optional().describe('Filter by symbol'),
+    size: z.string().optional().describe('Page size (default: 20)'),
+  },
+  async ({ symbol, size }) => {
+    try {
+      const c = await ensureClient();
+      let filterContractIdList: string[] | undefined;
+      if (symbol) {
+        const contract = await resolve(symbol);
+        filterContractIdList = [contract.contractId];
+      }
+      const data = await c.getPositionTermPage({ size: size ?? '20', filterContractIdList });
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_deleverage_light',
+  'Get account deleverage light status — indicates risk of auto-deleveraging.',
+  {},
+  async () => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getAccountDeleverageLight();
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+// ═══════════════════════════════════════════
+//  ORDER EXTENDED TOOLS
+// ═══════════════════════════════════════════
+
+server.tool(
+  'edgex_get_fill_history',
+  'Get order fill/trade history.',
+  {
+    symbol: z.string().optional().describe('Filter by symbol'),
+    size: z.string().optional().describe('Page size (default: 20)'),
+  },
+  async ({ symbol, size }) => {
+    try {
+      const c = await ensureClient();
+      let filterContractIdList: string[] | undefined;
+      if (symbol) {
+        const contract = await resolve(symbol);
+        filterContractIdList = [contract.contractId];
+      }
+      const data = await c.getHistoryOrderFillTransactionPage({ size: size ?? '20', filterContractIdList });
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_cancel_order_by_client_id',
+  'Cancel order(s) by client order ID.',
+  { clientOrderIds: z.array(z.string()).min(1).describe('Array of client order IDs to cancel') },
+  async ({ clientOrderIds }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.cancelOrderByClientOrderId(clientOrderIds);
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+// ═══════════════════════════════════════════
+//  TRANSFER TOOLS
+// ═══════════════════════════════════════════
+
+server.tool(
+  'edgex_get_transfer_available',
+  'Get available amount for transfer out.',
+  { coinId: z.string().describe('Coin ID to check') },
+  async ({ coinId }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getTransferOutAvailableAmount(coinId);
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_transfer_out_history',
+  'Get transfer out history.',
+  { size: z.string().optional().describe('Page size (default: 10)') },
+  async ({ size }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getActiveTransferOut({ size: size ?? '10' });
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_transfer_in_history',
+  'Get transfer in history.',
+  { size: z.string().optional().describe('Page size (default: 10)') },
+  async ({ size }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getActiveTransferIn({ size: size ?? '10' });
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+// ═══════════════════════════════════════════
+//  ASSET TOOLS
+// ═══════════════════════════════════════════
+
+server.tool(
+  'edgex_get_asset_orders',
+  'Get asset order history (deposits, withdrawals, transfers).',
+  { size: z.string().optional().describe('Page size (default: 10)') },
+  async ({ size }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getAssetOrdersPage({ size: size ?? '10' });
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_withdraw_history',
+  'Get withdrawal records.',
+  { size: z.string().optional().describe('Page size (default: 10)') },
+  async ({ size }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getNormalWithdrawById({ size: size ?? '10' });
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_withdrawable_amount',
+  'Get withdrawable amount for a coin address.',
+  { address: z.string().describe('Coin contract address') },
+  async ({ address }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getNormalWithdrawableAmount(address);
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_get_coin_rate',
+  'Get coin exchange rate.',
+  {
+    chainId: z.string().optional().describe('Chain ID (default: 1)'),
+    coin: z.string().optional().describe('Coin contract address'),
+  },
+  async ({ chainId, coin }) => {
+    try {
+      const c = await ensureClient();
+      const data = await c.getCoinRate(chainId ?? '1', coin ?? '0xdac17f958d2ee523a2206206994597c13d831ec7');
+      return textResult(data);
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+// ═══════════════════════════════════════════
+//  REGRESSION TEST TOOLS
+// ═══════════════════════════════════════════
+
+server.tool(
+  'edgex_list_tests',
+  'List available regression test suites and their cases.',
+  { suite: z.string().optional().describe('Suite name (e.g. tc_acc). Omit to list all suites.') },
+  async ({ suite }) => {
+    try {
+      const { execSync } = await import('node:child_process');
+      const cliPath = new URL('../../dist/index.js', import.meta.url).pathname;
+      const args = suite ? `test list ${suite} --json` : 'test list --json';
+      const output = execSync(`node ${cliPath} ${args}`, { encoding: 'utf-8', timeout: 10000 });
+      return textResult(JSON.parse(output));
+    } catch (e: any) { return errorResult(e.message); }
+  },
+);
+
+server.tool(
+  'edgex_run_tests',
+  'Run regression test suites. Returns structured JSON results with pass/fail per case. Default suites: tc_acc, tc_trd, tc_api, tc_sub.',
+  {
+    suites: z.array(z.string()).optional().describe('Suite names to run (e.g. ["tc_acc", "tc_trd"]). Omit for defaults. Use ["all"] for full regression.'),
+    env: z.enum(['mainnet', 'testnet']).optional().describe('Environment (default: current)'),
+  },
+  async ({ suites, env }) => {
+    try {
+      const { execSync } = await import('node:child_process');
+      const cliPath = new URL('../../dist/index.js', import.meta.url).pathname;
+      const suiteArgs = suites && suites.length > 0 ? suites.join(' ') : '';
+      const envFlag = env === 'testnet' ? ' --testnet' : '';
+      const cmd = `node ${cliPath} test run ${suiteArgs} --json${envFlag}`;
+      const output = execSync(cmd, { encoding: 'utf-8', timeout: 120000 });
+      return textResult(JSON.parse(output));
+    } catch (e: any) {
+      // Test failures return exit code 1 but still produce valid JSON on stdout
+      if (e.stdout) {
+        try { return textResult(JSON.parse(e.stdout)); } catch {}
+      }
+      return errorResult(e.message);
+    }
   },
 );
 

@@ -200,3 +200,132 @@ export function computeL2OrderFields(
     expireTime: String(expireTime),
   };
 }
+
+// ─── Transfer L2 Signing ───
+
+const TRANSFER_TYPE = 4n;
+const WITHDRAWAL_TO_ADDRESS_TYPE = 7n;
+const FIELD_PRIME = 0x800000000000011000000000000000000000000000000000000000000000001n;
+
+export interface TransferL2Fields {
+  clientTransferId: string;
+  l2Nonce: string;
+  l2ExpireTime: string;
+  l2Signature: string;
+}
+
+export function computeTransferL2Fields(
+  starkPrivateKey: string,
+  accountId: string,
+  assetId: bigint,
+  receiverPublicKey: bigint,
+  receiverAccountId: string,
+  amount: bigint,
+): TransferL2Fields {
+  const clientTransferId = String(Date.now()) + String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  const nonce = calcNonce(clientTransferId);
+
+  const l2ExpireTime = Date.now() + 14 * ONE_DAY_MS;
+  const l2ExpireHour = Math.floor(l2ExpireTime / ONE_HOUR_MS);
+
+  const senderPositionId = BigInt(accountId);
+  const receiverPositionId = BigInt(receiverAccountId);
+  const feePositionId = senderPositionId;
+  const maxAmountFee = 0n;
+  const assetIdFee = 0n;
+
+  // Pedersen hash chain for transfer
+  let msg = pedersen(assetId, assetIdFee);
+  msg = pedersen(msg, receiverPublicKey);
+
+  // Pack message 0: sender | receiver | fee | nonce
+  let packed0 = senderPositionId;
+  packed0 = (packed0 << 64n) + receiverPositionId;
+  packed0 = (packed0 << 64n) + feePositionId;
+  packed0 = (packed0 << 32n) + BigInt(nonce);
+  packed0 = packed0 % FIELD_PRIME;
+
+  msg = pedersen(msg, packed0);
+
+  // Pack message 1: type | amount | fee | expiry, padded 81 bits
+  let packed1 = TRANSFER_TYPE;
+  packed1 = (packed1 << 64n) + amount;
+  packed1 = (packed1 << 64n) + maxAmountFee;
+  packed1 = (packed1 << 32n) + BigInt(l2ExpireHour);
+  packed1 = packed1 << 81n;
+  packed1 = packed1 % FIELD_PRIME;
+
+  msg = pedersen(msg, packed1);
+
+  const msgHash = (typeof msg === 'bigint' ? msg : BigInt(msg)) % EC_ORDER;
+  const privKeyRaw = starkPrivateKey.startsWith('0x') ? starkPrivateKey.slice(2) : starkPrivateKey;
+  const privKeyBig = BigInt('0x' + privKeyRaw);
+  const { r, s } = starkEcdsaSign(msgHash, privKeyBig);
+
+  return {
+    clientTransferId,
+    l2Nonce: String(nonce),
+    l2ExpireTime: String(l2ExpireTime),
+    l2Signature: r.toString(16).padStart(64, '0') + s.toString(16).padStart(64, '0'),
+  };
+}
+
+// ─── Withdrawal L2 Signing ───
+
+export interface WithdrawalL2Fields {
+  clientWithdrawId: string;
+  l2ExpireTime: string;
+  l2Signature: string;
+}
+
+export function computeWithdrawalL2Fields(
+  starkPrivateKey: string,
+  accountId: string,
+  assetIdCollateral: string,
+  ethAddress: string,
+  amount: string,
+): WithdrawalL2Fields {
+  const clientWithdrawId = String(Date.now()) + String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  const nonce = calcNonce(clientWithdrawId);
+
+  const l2ExpireTime = Date.now() + 14 * ONE_DAY_MS;
+  const l2ExpireHour = Math.floor(l2ExpireTime / ONE_HOUR_MS);
+
+  // Parse inputs
+  const w1Raw = assetIdCollateral.startsWith('0x')
+    ? BigInt(assetIdCollateral)
+    : BigInt('0x' + assetIdCollateral);
+  const w1 = w1Raw % FIELD_PRIME;
+
+  const ethAddrRaw = ethAddress.startsWith('0x')
+    ? BigInt(ethAddress)
+    : BigInt('0x' + ethAddress);
+  const ethAddrInt = ethAddrRaw % FIELD_PRIME;
+
+  const positionId = BigInt(accountId);
+  const amountBig = BigInt(amount);
+
+  // Pack w5: type(64) | positionId(32) | nonce(64) | amount(32) | expiry << 49
+  let w5 = WITHDRAWAL_TO_ADDRESS_TYPE;
+  w5 = (w5 << 64n) + positionId;
+  w5 = (w5 << 32n) + BigInt(nonce);
+  w5 = (w5 << 64n) + amountBig;
+  w5 = (w5 << 32n) + BigInt(l2ExpireHour);
+  w5 = w5 << 49n;
+  w5 = w5 % FIELD_PRIME;
+
+  // Pedersen hash chain
+  let msg = pedersen(w1, ethAddrInt);
+  msg = pedersen(msg, w5);
+
+  const msgHash = (typeof msg === 'bigint' ? msg : BigInt(msg)) % EC_ORDER;
+  const privKeyRaw = starkPrivateKey.startsWith('0x') ? starkPrivateKey.slice(2) : starkPrivateKey;
+  const privKeyBig = BigInt('0x' + privKeyRaw);
+  const { r, s } = starkEcdsaSign(msgHash, privKeyBig);
+
+  return {
+    clientWithdrawId,
+    l2ExpireTime: String(l2ExpireTime),
+    l2Signature: r.toString(16).padStart(64, '0') + s.toString(16).padStart(64, '0'),
+  };
+}

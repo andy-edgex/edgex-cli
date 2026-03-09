@@ -7,14 +7,16 @@ import type { EdgexConfig } from './types.js';
 const CONFIG_DIR = join(homedir(), '.edgex');
 const IS_UNIX = platform() !== 'win32';
 
-const MAINNET_DEFAULTS: Pick<EdgexConfig, 'baseUrl' | 'wsUrl'> = {
+const MAINNET_DEFAULTS: Pick<EdgexConfig, 'baseUrl' | 'wsUrl' | 'edgeChainRpcUrl'> = {
   baseUrl: 'https://pro.edgex.exchange',
   wsUrl: 'wss://quote.edgex.exchange',
+  edgeChainRpcUrl: 'https://edge-mainnet.g.alchemy.com/public',
 };
 
-const TESTNET_DEFAULTS: Pick<EdgexConfig, 'baseUrl' | 'wsUrl'> = {
+const TESTNET_DEFAULTS: Pick<EdgexConfig, 'baseUrl' | 'wsUrl' | 'edgeChainRpcUrl'> = {
   baseUrl: 'https://testnet.edgex.exchange',
   wsUrl: 'wss://quote-testnet.edgex.exchange',
+  edgeChainRpcUrl: 'https://edge-testnet.g.alchemy.com/v2/p7XZ9PmQlUFoTRxwIeB38',
 };
 
 export function isTestnet(): boolean {
@@ -47,6 +49,7 @@ export async function loadConfig(): Promise<EdgexConfig> {
   if (process.env.EDGEX_STARK_PRIVATE_KEY) envConfig.starkPrivateKey = process.env.EDGEX_STARK_PRIVATE_KEY;
   if (process.env.EDGEX_BASE_URL) envConfig.baseUrl = process.env.EDGEX_BASE_URL;
   if (process.env.EDGEX_WS_URL) envConfig.wsUrl = process.env.EDGEX_WS_URL;
+  if (process.env.EDGEX_EDGE_CHAIN_RPC_URL) envConfig.edgeChainRpcUrl = process.env.EDGEX_EDGE_CHAIN_RPC_URL;
 
   let fileConfig: Partial<EdgexConfig> = {};
   const configFile = getConfigFile();

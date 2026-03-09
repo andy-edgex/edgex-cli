@@ -5,6 +5,7 @@ export interface EdgexConfig {
   starkPrivateKey?: string;
   baseUrl: string;
   wsUrl: string;
+  edgeChainRpcUrl: string;
 }
 
 // ─── API Response Envelope ───

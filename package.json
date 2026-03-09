@@ -1,6 +1,6 @@
 {
   "name": "@realnaka/edgex-cli",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "CLI for EdgeX perpetual contract trading",
   "type": "module",
   "bin": {
@@ -10,6 +10,8 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "tests",
+    "openclaw",
     "README.md",
     "LICENSE"
   ],
@@ -44,14 +46,15 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "@scure/starknet": "^2.0.0",
-    "@modelcontextprotocol/sdk": "^1.0.1",
     "chalk": "^5.4.1",
     "cli-table3": "^0.6.5",
     "commander": "^13.1.0",
     "enquirer": "^2.4.1",
+    "undici": "^7.22.0",
     "ws": "^8.19.0",
     "zod": "^3.24.0"
   },

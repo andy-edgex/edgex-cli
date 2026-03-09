@@ -1,0 +1,49 @@
+TAP version 13
+1..15
+# TC-TRD-001: Limit Buy Order (maker, far below market)
+not ok 1 - TC-TRD-001a: limit order creation returns orderId
+  ---
+  message: got: {
+  "success": false,
+  "error": "The order margin available amount not enough.",
+  "code": "ORDER_MARGIN_AVAILABLE_AMOUNT_NOT_ENOUGH"
+}
+  ---
+ok 2 - # SKIP TC-TRD-001b: skipped
+ok 3 - # SKIP TC-TRD-001c: skipped
+# TC-TRD-006: Cancel all orders
+ok 4 - TC-TRD-006a: cancel-all succeeds
+ok 5 - TC-TRD-006b: active orders list is empty after cancel-all
+# TC-TRD-002: Market Sell Order (taker) — SOL 1
+not ok 6 - TC-TRD-002a: market sell order created
+  ---
+  message: got: {
+  "success": false,
+  "error": "The order margin available amount not enough.",
+  "code": "ORDER_MARGIN_AVAILABLE_AMOUNT_NOT_ENOUGH"
+}
+  ---
+ok 7 - # SKIP TC-TRD-002b: skipped
+ok 8 - # SKIP TC-TRD-002c: skipped
+# TC-TRD-004: Reverse close position, balance recovers
+not ok 9 - TC-TRD-004a: reverse close order created
+  ---
+  message: got: {
+  "success": false,
+  "error": "The order margin available amount not enough.",
+  "code": "ORDER_MARGIN_AVAILABLE_AMOUNT_NOT_ENOUGH"
+}
+  ---
+ok 10 - # SKIP TC-TRD-004b: skipped
+ok 11 - # SKIP TC-TRD-004c: skipped
+# TC-TRD-003: Insufficient balance error interception
+ok 12 - TC-TRD-003a: oversized order is rejected (not crash)
+ok 13 - TC-TRD-003b: error message is non-empty (The order size exceed max order size 13600)
+# TC-TRD-005: Limit order with TP and SL
+not ok 14 - TC-TRD-005a: TP/SL order created
+  ---
+  message: got: The order margin available amount not enough.
+  ---
+ok 15 - # SKIP TC-TRD-005b: skipped
+
+# 4 of 15 tests FAILED

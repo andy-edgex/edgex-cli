@@ -1,0 +1,4 @@
+TAP version 13
+1..8
+# TC-SUB-001: Verify accountId isolation between main and sub
+ok 1 - TC-SUB-001a: main account returns its own accountId

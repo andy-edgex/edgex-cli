@@ -157,4 +157,165 @@ export function registerAccountCommand(program: Command): void {
         });
       } catch (err) { handleError(err, getFormat(cmd)); }
     });
+
+  // ─── position-transactions ───
+
+  account
+    .command('position-txs')
+    .description('Position transaction history')
+    .option('-n, --size <size>', 'Page size', '10')
+    .option('-s, --symbol <symbol>', 'Filter by symbol')
+    .action(async (opts: { size: string; symbol?: string }, cmd: Command) => {
+      try {
+        await init();
+        const fmt = getFormat(cmd);
+        const filterContractIdList = opts.symbol
+          ? [resolveSymbol(contracts, opts.symbol)?.contractId].filter(Boolean) as string[]
+          : undefined;
+        const data = await client.getPositionTransactionPage({ size: opts.size, filterContractIdList });
+        output(fmt, data, () => {
+          const d = data as Record<string, unknown>;
+          const list = (d.dataList ?? []) as Record<string, unknown>[];
+          if (list.length === 0) {
+            console.log(chalk.gray('No position transactions'));
+            return;
+          }
+          printTable(
+            ['TX ID', 'Symbol', 'Type', 'Size', 'Price', 'PnL', 'Time'],
+            list.map(t => [
+              String(t.transactionId ?? t.id ?? ''),
+              contractName(String(t.contractId ?? '')),
+              String(t.transactionType ?? t.type ?? ''),
+              String(t.size ?? ''),
+              String(t.price ?? ''),
+              String(t.realizedPnl ?? t.pnl ?? ''),
+              t.createdTime ? new Date(Number(t.createdTime)).toLocaleString() : '',
+            ]),
+          );
+        });
+      } catch (err) { handleError(err, getFormat(cmd)); }
+    });
+
+  // ─── collateral-transactions ───
+
+  account
+    .command('collateral-txs')
+    .description('Collateral transaction history')
+    .option('-n, --size <size>', 'Page size', '10')
+    .action(async (opts: { size: string }, cmd: Command) => {
+      try {
+        await init();
+        const fmt = getFormat(cmd);
+        const data = await client.getCollateralTransactionPage({ size: opts.size });
+        output(fmt, data, () => {
+          const d = data as Record<string, unknown>;
+          const list = (d.dataList ?? []) as Record<string, unknown>[];
+          if (list.length === 0) {
+            console.log(chalk.gray('No collateral transactions'));
+            return;
+          }
+          printTable(
+            ['TX ID', 'Type', 'Amount', 'Balance After', 'Time'],
+            list.map(t => [
+              String(t.transactionId ?? t.id ?? ''),
+              String(t.transactionType ?? t.type ?? ''),
+              String(t.deltaAmount ?? t.amount ?? ''),
+              String(t.afterAmount ?? ''),
+              t.createdTime ? new Date(Number(t.createdTime)).toLocaleString() : '',
+            ]),
+          );
+        });
+      } catch (err) { handleError(err, getFormat(cmd)); }
+    });
+
+  // ─── position-terms ───
+
+  account
+    .command('position-terms')
+    .description('Position term history (closed positions)')
+    .option('-n, --size <size>', 'Page size', '10')
+    .option('-s, --symbol <symbol>', 'Filter by symbol')
+    .action(async (opts: { size: string; symbol?: string }, cmd: Command) => {
+      try {
+        await init();
+        const fmt = getFormat(cmd);
+        const filterContractIdList = opts.symbol
+          ? [resolveSymbol(contracts, opts.symbol)?.contractId].filter(Boolean) as string[]
+          : undefined;
+        const data = await client.getPositionTermPage({ size: opts.size, filterContractIdList });
+        output(fmt, data, () => {
+          const d = data as Record<string, unknown>;
+          const list = (d.dataList ?? []) as Record<string, unknown>[];
+          if (list.length === 0) {
+            console.log(chalk.gray('No position terms'));
+            return;
+          }
+          printTable(
+            ['Term ID', 'Symbol', 'Side', 'Size', 'Entry', 'Exit', 'PnL', 'Time'],
+            list.map(t => [
+              String(t.termId ?? t.id ?? ''),
+              contractName(String(t.contractId ?? '')),
+              String(t.side ?? ''),
+              String(t.size ?? ''),
+              String(t.entryPrice ?? ''),
+              String(t.exitPrice ?? ''),
+              String(t.realizedPnl ?? ''),
+              t.createdTime ? new Date(Number(t.createdTime)).toLocaleString() : '',
+            ]),
+          );
+        });
+      } catch (err) { handleError(err, getFormat(cmd)); }
+    });
+
+  // ─── snapshots ───
+
+  account
+    .command('snapshots')
+    .description('Account asset snapshots')
+    .option('-n, --size <size>', 'Page size', '10')
+    .action(async (opts: { size: string }, cmd: Command) => {
+      try {
+        await init();
+        const fmt = getFormat(cmd);
+        const data = await client.getAccountAssetSnapshotPage({ size: opts.size });
+        output(fmt, data, () => {
+          console.log(chalk.bold('Account Snapshots\n'));
+          console.log(JSON.stringify(data, null, 2));
+        });
+      } catch (err) { handleError(err, getFormat(cmd)); }
+    });
+
+  // ─── deleverage ───
+
+  account
+    .command('deleverage')
+    .description('Account deleverage light status')
+    .action(async (_opts: unknown, cmd: Command) => {
+      try {
+        await init();
+        const fmt = getFormat(cmd);
+        const data = await client.getAccountDeleverageLight();
+        output(fmt, data, () => {
+          console.log(chalk.bold('Deleverage Light\n'));
+          console.log(JSON.stringify(data, null, 2));
+        });
+      } catch (err) { handleError(err, getFormat(cmd)); }
+    });
+
+  // ─── info ───
+
+  account
+    .command('info')
+    .description('Account details by ID')
+    .action(async (_opts: unknown, cmd: Command) => {
+      try {
+        await init();
+        const fmt = getFormat(cmd);
+        const data = await client.getAccountById();
+        output(fmt, data, () => {
+          console.log(chalk.bold('Account Info\n'));
+          console.log(JSON.stringify(data, null, 2));
+        });
+      } catch (err) { handleError(err, getFormat(cmd)); }
+    });
 }

@@ -7,14 +7,20 @@ import { registerSetupCommand } from './commands/setup.js';
 import { registerAccountCommand } from './commands/account.js';
 import { registerOrderCommand } from './commands/order.js';
 import { registerStreamCommand } from './commands/stream.js';
+import { registerTransferCommand } from './commands/transfer.js';
+import { registerAssetCommand } from './commands/asset.js';
+import { registerTestCommand } from './commands/test.js';
 import { startMcpServer } from './mcp/server.js';
+import { setupProxy } from './core/proxy.js';
+
+setupProxy();
 
 const program = new Command();
 
 program
   .name('edgex')
   .description('CLI for EdgeX perpetual contract trading')
-  .version('0.1.0')
+  .version('0.2.0')
   .option('--json', 'Output in JSON format')
   .option('--testnet', 'Use testnet environment');
 
@@ -37,6 +43,9 @@ registerSetupCommand(program);
 registerMarketCommand(program);
 registerAccountCommand(program);
 registerOrderCommand(program);
+registerTransferCommand(program);
+registerAssetCommand(program);
 registerStreamCommand(program);
+registerTestCommand(program);
 
 program.parse();

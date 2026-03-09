@@ -6,7 +6,7 @@ import { EdgexClient } from '../core/client.js';
 import { loadConfig } from '../core/config.js';
 import { loadCachedContracts, saveCachedContracts, resolveSymbol, getCachedCoins, findCoin } from '../core/symbols.js';
 import { computeL2OrderFields, type L2OrderMeta } from '../core/l2-signer.js';
-import { output, printKeyValue } from '../utils/output.js';
+import { output, printKeyValue, printTable } from '../utils/output.js';
 import { handleError, EdgexError } from '../utils/errors.js';
 import { buildOrderPayload } from '../core/order-service.js';
 
@@ -163,6 +163,67 @@ export function registerOrderCommand(program: Command): void {
             ['Max Buy Size', String(d.maxBuySize ?? d.maxBuyOrderSize ?? 'N/A')],
             ['Max Sell Size', String(d.maxSellSize ?? d.maxSellOrderSize ?? 'N/A')],
           ]);
+        });
+      } catch (err) { handleError(err, getFormat(cmd)); }
+    });
+
+  // ─── cancel-by-client-id ───
+
+  order
+    .command('cancel-client <clientOrderIds>')
+    .description('Cancel order(s) by client order ID (comma-separated)')
+    .action(async (clientOrderIds: string, _opts: unknown, cmd: Command) => {
+      try {
+        await init();
+        const fmt = getFormat(cmd);
+        const ids = clientOrderIds.split(',').map(id => id.trim()).filter(Boolean);
+        const data = await client.cancelOrderByClientOrderId(ids);
+
+        output(fmt, data, () => {
+          console.log(chalk.green(`Cancelled ${ids.length} order(s) by client ID: ${ids.join(', ')}`));
+        });
+      } catch (err) { handleError(err, getFormat(cmd)); }
+    });
+
+  // ─── fills ───
+
+  order
+    .command('fills')
+    .description('Order fill transaction history')
+    .option('-s, --symbol <symbol>', 'Filter by symbol')
+    .option('-n, --size <size>', 'Page size', '20')
+    .action(async (opts: { symbol?: string; size: string }, cmd: Command) => {
+      try {
+        await init();
+        const fmt = getFormat(cmd);
+        const filterContractIdList = opts.symbol
+          ? [resolveSymbol(contracts, opts.symbol)?.contractId].filter(Boolean) as string[]
+          : undefined;
+        const data = await client.getHistoryOrderFillTransactionPage({
+          size: opts.size,
+          filterContractIdList,
+        });
+
+        output(fmt, data, () => {
+          const d = data as Record<string, unknown>;
+          const list = (d.dataList ?? []) as Record<string, unknown>[];
+          if (list.length === 0) {
+            console.log(chalk.gray('No fill transactions'));
+            return;
+          }
+          printTable(
+            ['Fill ID', 'Order ID', 'Symbol', 'Side', 'Price', 'Size', 'Fee', 'Time'],
+            list.map(f => [
+              String(f.fillId ?? f.id ?? ''),
+              String(f.orderId ?? ''),
+              contractName(String(f.contractId ?? '')),
+              String(f.side ?? ''),
+              String(f.price ?? ''),
+              String(f.size ?? f.fillSize ?? ''),
+              String(f.fee ?? ''),
+              f.createdTime ? new Date(Number(f.createdTime)).toLocaleString() : '',
+            ]),
+          );
         });
       } catch (err) { handleError(err, getFormat(cmd)); }
     });

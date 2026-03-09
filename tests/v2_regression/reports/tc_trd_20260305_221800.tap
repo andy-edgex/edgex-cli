@@ -1,0 +1,25 @@
+TAP version 13
+1..15
+# TC-TRD-001: Limit Buy Order (maker, far below market)
+ok 1 - TC-TRD-001a: limit order creation returns orderId (724441397599404780)
+ok 2 - TC-TRD-001b: order appears in active orders list
+ok 3 - TC-TRD-001c: order side is BUY (confirmed in active list)
+# TC-TRD-006: Cancel all orders
+ok 4 - TC-TRD-006a: cancel-all succeeds
+ok 5 - TC-TRD-006b: active orders list is empty after cancel-all
+# TC-TRD-002: Market Sell Order (taker) — SOL 1
+ok 6 - TC-TRD-002a: market sell order created (id=724441445502550764)
+ok 7 - TC-TRD-002b: SOL SHORT position exists after market sell
+ok 8 - TC-TRD-002c: derived entry price is valid (90.60)
+# TC-TRD-004: Reverse close position, balance recovers
+ok 9 - TC-TRD-004a: reverse close order created (id=724441477173740268)
+ok 10 - TC-TRD-004b: SOL position closed after reverse order
+ok 11 - TC-TRD-004c: availableAmount > 0 after close (got 19.224632, was 10.163589)
+# TC-TRD-003: Insufficient balance error interception
+ok 12 - TC-TRD-003a: oversized order is rejected (not crash)
+ok 13 - TC-TRD-003b: error message is non-empty (The order size exceed max order size 13600)
+# TC-TRD-005: Limit order with TP and SL
+ok 14 - TC-TRD-005a: TP/SL order created (id=724441510900138732)
+ok 15 - TC-TRD-005b: no L2_LIMIT_FEE error (bug fixed)
+
+# All 15 tests passed

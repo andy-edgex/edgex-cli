@@ -1,0 +1,18 @@
+TAP version 13
+1..6
+# TC-WD-001: Normal withdraw (USDC) submission
+ok 1 - TC-WD-001: normal withdraw submitted (withdrawId=1214221570172522496)
+# TC-WD-002: withdraw-history check
+ok 2 - TC-WD-002: withdraw-history returns valid response
+# TC-WD-003: withdrawable amount
+ok 3 - TC-WD-003: withdrawable amount returns valid response
+# TC-WD-004: Cross-chain withdraw to Arb (USDC)
+# Transfer available amount: 8.324632
+# Skipping: insufficient balance (8.324632 < 10 USDC minimum)
+ok 4 - # SKIP TC-WD-004: cross-withdraw skipped (balance < 10 USDC)
+# TC-WD-005: transfer out-history check
+ok 5 - TC-WD-005: transfer out-history returns valid response
+# TC-WD-006: transfer available amount
+ok 6 - TC-WD-006: transfer available returns valid response
+
+# All 6 tests passed

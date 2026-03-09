@@ -1,0 +1,25 @@
+TAP version 13
+1..10
+# TC-ACC-001: Verify USDC asset fields
+ok 1 - TC-ACC-001a: totalEquity is non-empty
+ok 2 - TC-ACC-001b: totalEquity is positive number
+ok 3 - TC-ACC-001c: availableAmount is non-empty
+ok 4 - TC-ACC-001d: availableAmount is positive number
+ok 5 - TC-ACC-001e: collateral amount is non-empty
+# TC-ACC-002: Verify accountId consistency
+ok 6 - TC-ACC-002: returned accountId matches env
+# TC-ACC-003: initialMargin increases after placing limit order
+not ok 7 - TC-ACC-003a: limit order created for margin test
+  ---
+  message: order creation failed: {
+  "success": false,
+  "error": "The order size exceed min order size 0.003",
+  "code": "ORDER_SIZE_EXCEED_MIN_ORDER_SIZE"
+}
+  ---
+ok 8 - # SKIP TC-ACC-003b: skipped (no order)
+# TC-ACC-004: Max order size for BTC
+ok 9 - TC-ACC-004a: maxBuySize is non-empty
+ok 10 - TC-ACC-004b: maxBuySize is positive number
+
+# 1 of 10 tests FAILED
