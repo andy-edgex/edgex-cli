@@ -1,9 +1,0 @@
-src/
-tsconfig.json
-.gitignore
-.github/
-openclaw/
-*.tsbuildinfo
-.DS_Store
-.env
-.env.*
