@@ -1,0 +1,3 @@
+import { Command } from 'commander';
+export declare function registerSetupCommand(program: Command): void;
+//# sourceMappingURL=setup.d.ts.map
