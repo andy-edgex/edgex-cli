@@ -10,6 +10,7 @@ import { registerStreamCommand } from './commands/stream.js';
 import { registerTransferCommand } from './commands/transfer.js';
 import { registerAssetCommand } from './commands/asset.js';
 import { registerTestCommand } from './commands/test.js';
+import { registerDepositStatusCommand } from './commands/deposit-status.js';
 import { startMcpServer } from './mcp/server.js';
 import { setupProxy } from './core/proxy.js';
 
@@ -47,5 +48,6 @@ registerTransferCommand(program);
 registerAssetCommand(program);
 registerStreamCommand(program);
 registerTestCommand(program);
+registerDepositStatusCommand(program);
 
 program.parse();
