@@ -4,3 +4,5 @@ node_modules/
 *.log
 .env
 .env.*
+coverage/
+tests/v2_regression/reports/

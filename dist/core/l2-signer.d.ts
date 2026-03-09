@@ -25,6 +25,10 @@ export interface L2OrderFields {
     l2Signature: string;
     expireTime: string;
 }
+declare function calcNonce(clientOrderId: string): number;
+declare function hexToInt(hex: string): bigint;
+declare function decimalToBigInt(value: string, factor: bigint): bigint;
+declare function ceilDiv(a: bigint, b: bigint): bigint;
 export declare function computeL2OrderFields(input: L2OrderInput, meta: L2OrderMeta, starkPrivateKey: string): L2OrderFields;
 export interface TransferL2Fields {
     clientTransferId: string;
@@ -39,4 +43,5 @@ export interface WithdrawalL2Fields {
     l2Signature: string;
 }
 export declare function computeWithdrawalL2Fields(starkPrivateKey: string, accountId: string, assetIdCollateral: string, ethAddress: string, amount: string): WithdrawalL2Fields;
+export { calcNonce as _calcNonce, decimalToBigInt as _decimalToBigInt, ceilDiv as _ceilDiv, hexToInt as _hexToInt };
 //# sourceMappingURL=l2-signer.d.ts.map

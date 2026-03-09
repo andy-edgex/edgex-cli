@@ -17,8 +17,22 @@ source "$(dirname "$0")/lib.sh"
 # ─── Sub-account credentials ───
 MAIN_ACCT="$EDGEX_ACCOUNT_ID"
 MAIN_KEY="$EDGEX_STARK_PRIVATE_KEY"
-SUB_ACCT="${SUB_ACCOUNT_ID:?Set SUB_ACCOUNT_ID for tc_sub tests}"
-SUB_KEY="${SUB_STARK_PRIVATE_KEY:?Set SUB_STARK_PRIVATE_KEY for tc_sub tests}"
+SUB_ACCT="${SUB_ACCOUNT_ID:-}"
+SUB_KEY="${SUB_STARK_PRIVATE_KEY:-}"
+
+if [ -z "$SUB_ACCT" ] || [ -z "$SUB_KEY" ]; then
+  tap_plan 7
+  echo "# SKIP: SUB_ACCOUNT_ID or SUB_STARK_PRIVATE_KEY not set"
+  tap_skip "TC-SUB-001a: sub-account credentials not configured"
+  tap_skip "TC-SUB-001b: sub-account credentials not configured"
+  tap_skip "TC-SUB-002a: sub-account credentials not configured"
+  tap_skip "TC-SUB-002b: sub-account credentials not configured"
+  tap_skip "TC-SUB-003: sub-account credentials not configured"
+  tap_skip "TC-SUB-004a: sub-account credentials not configured"
+  tap_skip "TC-SUB-004b: sub-account credentials not configured"
+  tap_summary
+  exit 0
+fi
 
 tap_plan 7
 

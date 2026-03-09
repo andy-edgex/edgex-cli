@@ -27,3 +27,6 @@ export async function rateLimit(): Promise<void> {
 
   timestamps.push(Date.now());
 }
+
+// Test-only export
+export function _resetTimestamps() { timestamps.length = 0; }

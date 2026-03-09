@@ -214,4 +214,6 @@ export function computeWithdrawalL2Fields(starkPrivateKey, accountId, assetIdCol
         l2Signature: r.toString(16).padStart(64, '0') + s.toString(16).padStart(64, '0'),
     };
 }
+// Test-only exports (prefixed with _ to signal internal use)
+export { calcNonce as _calcNonce, decimalToBigInt as _decimalToBigInt, ceilDiv as _ceilDiv, hexToInt as _hexToInt };
 //# sourceMappingURL=l2-signer.js.map

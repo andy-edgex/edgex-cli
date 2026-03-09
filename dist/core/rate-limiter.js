@@ -21,4 +21,6 @@ export async function rateLimit() {
     }
     timestamps.push(Date.now());
 }
+// Test-only export
+export function _resetTimestamps() { timestamps.length = 0; }
 //# sourceMappingURL=rate-limiter.js.map

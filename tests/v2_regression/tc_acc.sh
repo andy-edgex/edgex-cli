@@ -74,6 +74,11 @@ MAX_BUY=$(json_get "$MAX_OUT" "maxBuySize")
 MAX_SELL=$(json_get "$MAX_OUT" "maxSellSize")
 
 assert_not_empty "$MAX_BUY" "TC-ACC-004a: maxBuySize is non-empty"
-assert_numeric "$MAX_BUY" "TC-ACC-004b: maxBuySize is positive number"
+# maxBuySize may be 0 on testnet if account balance is low
+if echo "$MAX_BUY" | grep -qE '^[0-9]+(\.[0-9]+)?$'; then
+  tap_ok "TC-ACC-004b: maxBuySize is a valid number ($MAX_BUY)"
+else
+  tap_fail "TC-ACC-004b: maxBuySize is a valid number" "got '$MAX_BUY'"
+fi
 
 tap_summary

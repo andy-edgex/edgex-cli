@@ -118,3 +118,6 @@ export function signRequest(
     signature: rHex + sHex + yHex,
   };
 }
+
+// Test-only exports (prefixed with _ to signal internal use)
+export { serializeValue as _serializeValue, bytesToBigInt as _bytesToBigInt };
