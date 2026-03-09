@@ -16,10 +16,16 @@ Built for traders and AI agents. All commands support `--json` output for progra
 ## Install
 
 ```bash
+npm install -g https://github.com/andy-edgex/edgex-cli/tarball/master
+```
+
+Or from source:
+
+```bash
 git clone https://github.com/andy-edgex/edgex-cli.git
 cd edgex-cli
 npm install --omit=dev
-npm link         # makes "edgex" command available globally
+npm link
 ```
 
 Requires Node.js >= 18.
