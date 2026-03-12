@@ -6,8 +6,9 @@
  * any backend API dependency.
  */
 import { getDispatcher } from './proxy.js';
-// Event topic hashes (keccak256 of event signature)
 const TOPICS = {
+    // FrontContract.DepositTo(address indexed user, address indexed token, uint256 amount)
+    FRONT_DEPOSIT_TO: '0x4e37396893499c03b3a225e21bae6c33c5e80136160b71d1d17a0a0b945d5f0e',
     // SpotVault.Deposit(address indexed from, address indexed token, uint256 amount, uint256 accountId)
     SPOT_VAULT_DEPOSIT: '0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7',
     // CCTPVaultRelayer.RelayDepositSucceeded(address indexed recipient, uint256 amount, uint32 sourceDomain, uint32 finalityExecuted, bytes32 nonce)
@@ -147,6 +148,15 @@ function parseRelayDepositLog(log) {
         sourceDomain: hex2dec('0x' + data.slice(64, 128)),
     };
 }
+function parseFrontDepositToLog(log) {
+    if (log.topics[0] !== TOPICS.FRONT_DEPOSIT_TO)
+        return null;
+    return {
+        user: hexToAddress(log.topics[1] ?? ''),
+        token: hexToAddress(log.topics[2] ?? ''),
+        amount: hex2dec('0x' + log.data.replace('0x', '').slice(0, 64)),
+    };
+}
 function parseErc20TransferLog(log) {
     if (log.topics[0] !== TOPICS.ERC20_TRANSFER)
         return null;
@@ -176,6 +186,7 @@ export function getDefaultChains(edgeChainRpcUrl, testnet = false) {
                 rpcUrl: edgeChainRpcUrl,
                 knownContracts: {
                     '0x3ea4106bb691c3e9f657f8baf1345473e86658c6': 'SpotVault',
+                    '0xfc26d07ee1db289ce378edc962e4631364c9c4b1': 'FrontContract',
                 },
             },
             {
@@ -305,6 +316,16 @@ export async function trackDeposit(txHash, chains) {
         // Edge chain — look for SpotVault.Deposit or RelayDepositSucceeded
         result.status = 'credited'; // If tx succeeded on Edge chain, funds are credited
         for (const log of receipt.logs) {
+            const frontDeposit = parseFrontDepositToLog(log);
+            if (frontDeposit) {
+                const token = frontDeposit.token;
+                const decimals = getDecimals(token);
+                result.amount = hex2amount('0x' + BigInt(frontDeposit.amount).toString(16), decimals);
+                result.accountId = frontDeposit.user; // Use user address for display
+                result.asset = getAssetName(token);
+                result.details = { ...frontDeposit, contract: contractName ?? toAddr, type: 'front_deposit_to' };
+                break;
+            }
             const spotDeposit = parseSpotVaultDepositLog(log);
             if (spotDeposit) {
                 const token = spotDeposit.token;
